@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Buko Chips by Benj</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&display=swap" rel="stylesheet" />
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <!-- GSAP + ScrollTrigger + Lenis + SplitType -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/Draggable.min.js"></script>
+    <script src="https://unpkg.com/lenis@1.1.18/dist/lenis.min.js"></script>
+    <script src="https://unpkg.com/split-type@0.3.4/umd/split-type.min.js"></script>
+
+    <style>
+        /* ----- RESET & BASE ----- */
+        * { margin:0; padding:0; box-sizing:border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family:'Inter', -apple-system, sans-serif;
+            background:#faf7f2; color:#1e1a14;
+            overflow-x:hidden;
+            -webkit-font-smoothing:antialiased;
+        }
+        /* ----- LOADING ----- */
+        #loader {
+            position:fixed; inset:0; z-index:99999;
+            background:#0b0a08;
+            display:flex; flex-direction:column; align-items:center; justify-content:center;
+            transition:opacity 1.2s cubic-bezier(.65,0,.35,1);
+            pointer-events:none;
+        }
+        #loader.hidden { opacity:0; }
+        .loader-logo {
+            width:180px; max-width:50vw;
+            opacity:0; animation:loaderFade 1.8s ease forwards;
+            filter:drop-shadow(0 0 30px rgba(245,197,66,.15));
+        }
+        @keyframes loaderFade {
+            0%{opacity:0; transform:scale(.96); filter:drop-shadow(0 0 0 rgba(245,197,66,0));}
+            60%{opacity:1; transform:scale(1); filter:drop-shadow(0 0 50px rgba(245,197,66,.25));}
+            100%{opacity:1; transform:scale(1); filter:drop-shadow(0 0 20px rgba(245,197,66,.12));}
+        }
+        .loader-tagline {
+            color:#d4c9bc; font-size:.95rem; letter-spacing:.06em; font-weight:300;
+            margin-top:1.8rem; opacity:0; animation:taglineUp 1.4s .5s ease forwards;
+            text-align:center;
+        }
+        @keyframes taglineUp { 0%{opacity:0; transform:translateY(12px);} 100%{opacity:1; transform:translateY(0);} }
+        .loader-progress {
+            width:200px; max-width:60vw; height:2px; background:rgba(255,215,100,.15);
+            border-radius:4px; margin-top:2rem; overflow:hidden;
+        }
+        .loader-progress-bar {
+            height:100%; width:0%;
+            background:linear-gradient(90deg,#f5c542,#f7d875);
+            border-radius:4px;
+            animation:progressAnim 2.2s cubic-bezier(.25,.1,.15,1) forwards;
+        }
+        @keyframes progressAnim { 0%{width:0%;} 100%{width:100%;} }
+
+        /* ----- NAVIGATION ----- */
+        nav {
+            position:fixed; top:0; left:0; width:100%;
+            padding:1rem 2.5rem;
+            display:flex; align-items:center; justify-content:space-between;
+            z-index:1000;
+            transition:all .5s cubic-bezier(.25,.1,.15,1);
+            background:transparent; backdrop-filter:blur(0px);
+        }
+        nav.sticky {
+            background:rgba(20,18,16,.55);
+            backdrop-filter:blur(18px) saturate(180%);
+            box-shadow:0 8px 40px rgba(0,0,0,.12);
+            padding:.6rem 2.5rem;
+            border-bottom:1px solid rgba(255,215,100,.06);
+        }
+        .nav-logo { display:flex; align-items:center; width:100px; flex-shrink:0; transition:all .4s ease; }
+        .nav-logo img { width:100%; height:auto; display:block; }
+        nav.sticky .nav-logo { width:74px; }
+        .nav-links { display:flex; align-items:center; gap:2rem; list-style:none; }
+        .nav-links a {
+            color:#f0ebe4; text-decoration:none; font-size:.85rem; font-weight:450;
+            letter-spacing:.02em; transition:.25s ease; opacity:.7;
+            position:relative; padding:.2rem 0;
+        }
+        .nav-links a::after {
+            content:''; position:absolute; bottom:-2px; left:0; width:0; height:1.5px;
+            background:currentColor; transition:width .3s ease;
+        }
+        .nav-links a:hover { opacity:1; }
+        .nav-links a:hover::after { width:100%; }
+        .nav-links .reseller-cta {
+            background:#f5c542; color:#13100c !important; padding:.5rem 1.5rem;
+            border-radius:40px; font-weight:600; font-size:.8rem; opacity:1 !important;
+            box-shadow:0 4px 20px rgba(245,197,66,.25); transition:.3s ease;
+        }
+        .nav-links .reseller-cta::after { display:none; }
+        .nav-links .reseller-cta:hover { transform:scale(1.04); box-shadow:0 8px 30px rgba(245,197,66,.35); background:#ffd966; }
+        .menu-toggle { display:none; font-size:1.5rem; color:#f0ebe4; background:none; border:none; cursor:pointer; padding:.2rem .5rem; }
+
+        /* ----- HERO ----- */
+        .hero {
+            min-height:100vh; width:100%; display:flex; align-items:center; justify-content:center;
+            text-align:center; padding:8rem 2rem 5rem;
+            position:relative; overflow:hidden;
+            background:radial-gradient(ellipse at 30% 20%, #2a251e, #0f0d0a);
+        }
+        .hero-bg-particles {
+            position:absolute; inset:0; pointer-events:none; overflow:hidden;
+        }
+        .hero-bg-particles span {
+            position:absolute; width:4px; height:4px; background:rgba(245,197,66,.15);
+            border-radius:50%; animation:floatParticle 12s infinite linear;
+        }
+        @keyframes floatParticle {
+            0%{transform:translateY(100vh) scale(0); opacity:0;}
+            10%{opacity:1;}
+            90%{opacity:1;}
+            100%{transform:translateY(-10vh) scale(1); opacity:0;}
+        }
+        .hero-content { position:relative; z-index:2; max-width:880px; }
+        .hero-content h1 {
+            font-size:clamp(2.6rem,10vw,5.6rem); font-weight:700; letter-spacing:-.03em;
+            line-height:1.08; color:#f5ede3; margin-bottom:1.2rem;
+            text-shadow:0 4px 40px rgba(0,0,0,.3);
+        }
+        .hero-content h1 span {
+            background:linear-gradient(135deg,#f5c542,#f7d875);
+            -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+        }
+        .hero-content p {
+            font-size:clamp(1rem,1.8vw,1.35rem); color:#d6cdc0; font-weight:300;
+            max-width:600px; margin:0 auto 2.5rem; line-height:1.7; letter-spacing:.01em;
+        }
+        .hero-stats { display:flex; justify-content:center; gap:3rem; margin-bottom:2.8rem; flex-wrap:wrap; }
+        .hero-stats .stat { text-align:center; }
+        .hero-stats .stat .num { font-size:1.8rem; font-weight:700; color:#f5ede3; letter-spacing:-.02em; }
+        .hero-stats .stat .label { font-size:.75rem; color:#a89f92; text-transform:uppercase; letter-spacing:.08em; font-weight:400; margin-top:.2rem; }
+        .hero-btns { display:flex; gap:1rem; justify-content:center; flex-wrap:wrap; }
+        .btn-primary {
+            background:#f5c542; border:none; padding:.9rem 2.8rem; border-radius:60px;
+            font-weight:600; font-size:.95rem; color:#13100c;
+            box-shadow:0 8px 30px rgba(245,197,66,.25);
+            transition:.3s ease; cursor:pointer; text-decoration:none; display:inline-block;
+        }
+        .btn-primary:hover { transform:scale(1.04); box-shadow:0 12px 40px rgba(245,197,66,.35); background:#ffd966; }
+        .btn-secondary {
+            background:rgba(255,255,255,.06); backdrop-filter:blur(8px);
+            border:1px solid rgba(255,255,255,.1); padding:.9rem 2.8rem; border-radius:60px;
+            font-weight:500; font-size:.95rem; color:#f0ebe4;
+            transition:.3s ease; cursor:pointer; text-decoration:none; display:inline-block;
+        }
+        .btn-secondary:hover { background:rgba(255,255,255,.12); transform:scale(1.04); }
+
+        /* ----- PRODUCT EXPERIENCE ----- */
+        .product-experience {
+            padding:4rem 0 6rem; position:relative; overflow:hidden;
+            transition:background .8s ease, color .8s ease;
+        }
+        .product-experience .section-label {
+            text-align:center; font-size:.7rem; text-transform:uppercase; letter-spacing:.2em;
+            color:#a89f92; margin-bottom:1.5rem; font-weight:500;
+        }
+        .product-experience .section-title {
+            text-align:center; font-size:clamp(2rem,5vw,3.4rem); font-weight:600;
+            letter-spacing:-.02em; margin-bottom:.5rem; transition:color .6s ease;
+        }
+        .product-experience .section-sub {
+            text-align:center; font-size:1rem; color:#a89f92; font-weight:300;
+            margin-bottom:3rem; transition:color .6s ease;
+        }
+        .product-carousel-wrap {
+            position:relative; overflow:hidden; padding:1rem 0;
+            cursor:grab; touch-action:none;
+        }
+        .product-carousel-wrap:active { cursor:grabbing; }
+        .product-track {
+            display:flex; gap:4rem; padding:0 10vw;
+            will-change:transform; align-items:center;
+        }
+        .product-slide {
+            flex:0 0 280px; display:flex; flex-direction:column; align-items:center; text-align:center;
+            transition:opacity .5s ease, transform .5s ease;
+            opacity:.4; transform:scale(.85); pointer-events:none; user-select:none;
+        }
+        .product-slide.active { opacity:1; transform:scale(1); pointer-events:auto; }
+        .product-slide .product-img-wrapper {
+            position:relative; display:inline-block; padding:10px; border-radius:50%;
+            transition:all .8s ease;
+        }
+        .product-slide .product-img {
+            width:100%; max-width:240px; height:auto;
+            transition:filter .6s ease; pointer-events:none; will-change:transform;
+        }
+        .product-slide .product-name { font-size:1.2rem; font-weight:600; margin-top:1.2rem; transition:color .6s ease; }
+        .product-slide .product-desc { font-size:.85rem; color:#a89f92; font-weight:300; max-width:200px; transition:color .6s ease; }
+        .product-nav-dots { display:flex; justify-content:center; gap:.6rem; margin-top:2.5rem; }
+        .product-nav-dots .dot {
+            width:8px; height:8px; border-radius:50%; background:rgba(0,0,0,.15);
+            transition:all .4s ease; cursor:pointer;
+        }
+        .product-nav-dots .dot.active { background:#f5c542; width:28px; border-radius:4px; }
+        .product-experience .bg-overlay {
+            position:absolute; inset:0; pointer-events:none; transition:opacity .8s ease;
+            opacity:0; z-index:0;
+        }
+        .product-experience .bg-overlay.active { opacity:1; }
+        .product-experience > *:not(.bg-overlay) { position:relative; z-index:1; }
+
+        /* ----- ABOUT ----- */
+        .about-section { padding:6rem 2rem; background:#0f0d0a; color:#f5ede3; position:relative; overflow:hidden; }
+        .about-section .container { max-width:1100px; margin:0 auto; }
+        .about-section h2 { font-size:clamp(2.4rem,6vw,4.2rem); font-weight:600; letter-spacing:-.03em; margin-bottom:2rem; }
+        .about-section h2 span { background:linear-gradient(135deg,#f5c542,#f7d875); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+        .about-section .about-grid { display:grid; grid-template-columns:1fr 1fr; gap:3rem; align-items:center; }
+        .about-section .about-text { font-size:1.05rem; line-height:1.8; color:#d6cdc0; font-weight:300; }
+        .about-section .about-text p { margin-bottom:1.2rem; }
+        .about-section .about-image { position:relative; border-radius:24px; overflow:hidden; box-shadow:0 30px 80px rgba(0,0,0,.4); }
+        .about-section .about-image img { width:100%; height:auto; display:block; }
+
+        /* ----- GALLERY ----- */
+        .gallery-section { padding:5rem 2rem; background:#faf7f2; overflow:hidden; }
+        .gallery-section .container { max-width:1200px; margin:0 auto; }
+        .gallery-section h2 { font-size:clamp(2rem,4vw,3rem); font-weight:600; letter-spacing:-.02em; margin-bottom:.5rem; color:#1e1a14; }
+        .gallery-section .gallery-sub { color:#a89f92; font-weight:300; margin-bottom:3rem; font-size:1.05rem; }
+        .gallery-scroll { display:flex; gap:2rem; overflow-x:auto; padding:1rem .5rem 2rem; scroll-snap-type:x mandatory; }
+        .gallery-scroll::-webkit-scrollbar { height:4px; }
+        .gallery-scroll::-webkit-scrollbar-track { background:rgba(0,0,0,.05); border-radius:4px; }
+        .gallery-scroll::-webkit-scrollbar-thumb { background:#f5c542; border-radius:4px; }
+        .gallery-scroll .gallery-item { flex:0 0 280px; scroll-snap-align:start; border-radius:20px; overflow:hidden; box-shadow:0 10px 40px rgba(0,0,0,.06); transition:.4s ease; }
+        .gallery-scroll .gallery-item:hover { transform:scale(1.02); box-shadow:0 20px 60px rgba(0,0,0,.1); }
+        .gallery-scroll .gallery-item img { width:100%; height:280px; object-fit:cover; display:block; }
+
+        /* ----- WHY CHOOSE US ----- */
+        .why-section { padding:5rem 2rem; background:#0f0d0a; color:#f5ede3; }
+        .why-section .container { max-width:1100px; margin:0 auto; }
+        .why-section h2 { font-size:clamp(2rem,4vw,3rem); font-weight:600; letter-spacing:-.02em; margin-bottom:3rem; text-align:center; }
+        .why-text-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:1.8rem 3rem; }
+        .why-text-item {
+            display:flex; align-items:flex-start; gap:1.2rem;
+            padding:.8rem 1rem; border-bottom:1px solid rgba(255,215,100,.05);
+            border-radius:8px;
+        }
+        .why-text-item i { font-size:1.4rem; color:#f5c542; flex-shrink:0; margin-top:.2rem; }
+        .why-text-item h4 { font-weight:500; font-size:1.05rem; color:#f5ede3; margin-bottom:.2rem; }
+        .why-text-item p { font-size:.9rem; color:#a89f92; font-weight:300; line-height:1.5; }
+
+        /* ----- REVIEWS ----- */
+        .reviews-section { padding:5rem 2rem; background:#faf7f2; overflow:hidden; }
+        .reviews-section .container { max-width:1200px; margin:0 auto; }
+        .reviews-section h2 { font-size:clamp(2rem,4vw,3rem); font-weight:600; letter-spacing:-.02em; margin-bottom:.5rem; color:#1e1a14; }
+        .reviews-section .reviews-sub { color:#a89f92; font-weight:300; margin-bottom:3rem; font-size:1.05rem; }
+        .reviews-wrapper { overflow-x:auto; padding-bottom:1rem; }
+        .reviews-wrapper::-webkit-scrollbar { height:4px; }
+        .reviews-wrapper::-webkit-scrollbar-track { background:rgba(0,0,0,.05); border-radius:4px; }
+        .reviews-wrapper::-webkit-scrollbar-thumb { background:#f5c542; border-radius:4px; }
+        .reviews-track { display:flex; gap:2rem; width:max-content; }
+        .review-card {
+            flex:0 0 320px; background:white; border-radius:24px; padding:2rem;
+            box-shadow:0 8px 30px rgba(0,0,0,.04); transition:.3s ease; min-width:320px;
+        }
+        .review-card:hover { transform:translateY(-4px) scale(1.02); box-shadow:0 20px 50px rgba(0,0,0,.06); }
+        .review-card .stars { color:#f5c542; font-size:.9rem; letter-spacing:2px; margin-bottom:.6rem; }
+        .review-card .review-text { font-size:.95rem; line-height:1.6; color:#1e1a14; font-weight:400; }
+        .review-card .review-author { font-size:.8rem; color:#a89f92; margin-top:.8rem; font-weight:400; }
+
+        /* ----- FAQ - HOVER TO REVEAL (no click) ----- */
+        .faq-section { padding:5rem 2rem; background:#0f0d0a; color:#f5ede3; }
+        .faq-section .container { max-width:800px; margin:0 auto; }
+        .faq-section h2 { font-size:clamp(2rem,4vw,3rem); font-weight:600; letter-spacing:-.02em; margin-bottom:2.5rem; text-align:center; }
+        .faq-item {
+            border-bottom:1px solid rgba(255,215,100,.06);
+            padding:1.2rem 1rem;
+            transition:all .4s cubic-bezier(.25,.1,.15,1);
+            border-radius:8px;
+            margin-bottom:.2rem;
+            cursor:default;
+        }
+        .faq-item:hover { background:rgba(255,255,255,.04); border-bottom-color:rgba(255,215,100,.2); }
+        .faq-item .faq-q {
+            display:flex; justify-content:space-between; align-items:center;
+            font-weight:500; font-size:1.05rem; color:#f5ede3;
+            transition:.3s ease;
+            user-select:none;
+            pointer-events:none;
+        }
+        .faq-item .faq-q i {
+            transition:.5s cubic-bezier(.25,.1,.15,1);
+            color:#f5c542;
+            font-size:.9rem;
+        }
+        .faq-item .faq-a {
+            max-height:0;
+            overflow:hidden;
+            transition:max-height .6s cubic-bezier(.25,.1,.15,1), opacity .4s ease, padding .4s ease, margin .4s ease;
+            opacity:0;
+            color:#d6cdc0;
+            font-weight:300;
+            line-height:1.7;
+            font-size:.95rem;
+            padding:0 .5rem;
+            margin:0;
+        }
+        /* Hover state - answer slides down automatically */
+        .faq-item:hover .faq-a {
+            max-height:600px;
+            opacity:1;
+            padding-top:1rem;
+            padding-bottom:.5rem;
+            margin-top:.3rem;
+        }
+        .faq-item:hover .faq-q i {
+            transform:rotate(180deg);
+        }
+        .faq-item:hover .faq-q {
+            color:#f5c542;
+        }
+
+        /* ----- CONTACT ----- */
+        .contact-section { padding:5rem 2rem; background:#faf7f2; }
+        .contact-section .container { max-width:800px; margin:0 auto; text-align:center; }
+        .contact-section h2 { font-size:clamp(2rem,4vw,3rem); font-weight:600; letter-spacing:-.02em; color:#1e1a14; }
+        .contact-section .contact-sub { color:#a89f92; font-weight:300; margin:.5rem 0 2rem; font-size:1.05rem; }
+        .contact-form { display:flex; flex-direction:column; gap:1.2rem; max-width:600px; margin:0 auto 2.5rem; text-align:left; }
+        .form-group { width:100%; }
+        .form-group input, .form-group textarea {
+            width:100%; padding:.9rem 1.2rem; border:1.5px solid rgba(0,0,0,.08);
+            border-radius:16px; font-family:'Inter',sans-serif; font-size:.95rem;
+            background:white; transition:.3s ease; color:#1e1a14; outline:none;
+        }
+        .form-group input:focus, .form-group textarea:focus { border-color:#f5c542; box-shadow:0 0 0 4px rgba(245,197,66,.1); }
+        .form-group textarea { resize:vertical; min-height:120px; }
+        .contact-form .btn-primary { width:100%; text-align:center; padding:.9rem; font-size:1rem; }
+        .contact-section .contact-item { display:flex; align-items:center; justify-content:center; gap:.8rem; font-size:1.1rem; color:#1e1a14; margin:.6rem 0; }
+        .contact-section .contact-item i { color:#f5c542; width:24px; }
+        .contact-section .contact-item a { color:#1e1a14; text-decoration:none; border-bottom:1px solid transparent; transition:.3s ease; }
+        .contact-section .contact-item a:hover { border-bottom-color:#f5c542; }
+        .social-links { display:flex; gap:1.5rem; justify-content:center; margin-top:2rem; }
+        .social-links a { color:#1e1a14; font-size:1.6rem; transition:.3s ease; }
+        .social-links a:hover { color:#f5c542; transform:translateY(-3px); }
+
+        /* ----- RESELLER ----- */
+        #reseller { background:#0f0d0a; padding:4rem 2rem; text-align:center; border-top:1px solid rgba(255,215,100,.04); }
+        #reseller h2 { color:#f5ede3; font-weight:600; font-size:clamp(2rem,4vw,3rem); }
+        #reseller p { color:#a89f92; max-width:500px; margin:1rem auto 2rem; font-weight:300; font-size:1.05rem; }
+        #reseller .btn-primary { font-size:1rem; padding:1rem 3rem; }
+
+        /* ----- FOOTER ----- */
+        footer { background:#0b0a08; padding:3rem 2rem 2rem; border-top:1px solid rgba(255,215,100,.04); color:#a89f92; }
+        footer .container { max-width:1100px; margin:0 auto; display:grid; grid-template-columns:2fr 1fr 1fr 1fr; gap:2.5rem; }
+        footer .footer-brand .footer-logo { width:120px; margin-bottom:1rem; }
+        footer .footer-brand .footer-logo img { width:100%; height:auto; display:block; filter:brightness(.95); }
+        footer .footer-brand p { font-size:.9rem; font-weight:300; line-height:1.6; max-width:300px; }
+        footer h4 { color:#f5ede3; font-weight:500; font-size:.85rem; text-transform:uppercase; letter-spacing:.08em; margin-bottom:1rem; }
+        footer ul { list-style:none; }
+        footer ul li { margin-bottom:.5rem; }
+        footer ul li a { color:#a89f92; text-decoration:none; font-size:.9rem; font-weight:300; transition:.3s ease; }
+        footer ul li a:hover { color:#f5ede3; }
+        footer .social-icons { display:flex; gap:1rem; margin-top:.5rem; }
+        footer .social-icons a { color:#a89f92; font-size:1.2rem; transition:.3s ease; }
+        footer .social-icons a:hover { color:#f5c542; transform:translateY(-2px); }
+        footer .footer-bottom { grid-column:1/-1; text-align:center; padding-top:2rem; border-top:1px solid rgba(255,215,100,.04); font-size:.8rem; font-weight:300; margin-top:1rem; }
+
+        .text-gradient { background:linear-gradient(135deg,#f5c542,#f7d875); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+
+        /* ----- RESPONSIVE ----- */
+        @media (max-width:900px) {
+            nav { padding:.8rem 1.5rem; }
+            nav.sticky { padding:.5rem 1.5rem; }
+            .nav-logo { width:80px; }
+            nav.sticky .nav-logo { width:62px; }
+            .menu-toggle { display:block; }
+            .nav-links {
+                position:absolute; top:100%; left:0; width:100%; flex-direction:column;
+                background:rgba(10,10,9,.92); backdrop-filter:blur(20px);
+                padding:2rem 1.5rem; gap:1.2rem;
+                transform:scaleY(0); transform-origin:top center; opacity:0;
+                transition:.35s ease; pointer-events:none;
+                border-radius:0 0 28px 28px; border-bottom:1px solid rgba(255,215,100,.06);
+            }
+            .nav-links.open { transform:scaleY(1); opacity:1; pointer-events:auto; }
+            .nav-links a { font-size:1rem; width:100%; text-align:center; padding:.4rem 0; }
+            .nav-links .reseller-cta { width:fit-content; margin:0 auto; }
+            .hero-stats { gap:1.5rem; }
+            .about-section .about-grid { grid-template-columns:1fr; }
+            footer .container { grid-template-columns:1fr 1fr; }
+            .product-track { padding:0 5vw; gap:2rem; }
+            .product-slide { flex:0 0 200px; }
+            .product-slide .product-img { max-width:160px; }
+            .review-card { flex:0 0 280px; min-width:280px; }
+            .why-text-grid { grid-template-columns:1fr; }
+        }
+        @media (max-width:500px) {
+            .hero-content h1 { font-size:2.2rem; }
+            .hero-stats { flex-direction:column; gap:.8rem; }
+            .hero-stats .stat .num { font-size:1.4rem; }
+            .btn-primary, .btn-secondary { padding:.7rem 1.8rem; font-size:.85rem; }
+            .product-slide { flex:0 0 160px; }
+            .product-slide .product-img { max-width:120px; }
+            footer .container { grid-template-columns:1fr; text-align:center; }
+            footer .footer-brand p { max-width:100%; }
+            footer .social-icons { justify-content:center; }
+            .contact-form { padding:0 .5rem; }
+            .review-card { flex:0 0 240px; min-width:240px; padding:1.5rem; }
+            .why-text-item { flex-direction:column; align-items:center; text-align:center; gap:.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- LOADING -->
+    <div id="loader">
+        <img class="loader-logo" src="https://cdn.corenexis.com/f/l0ubNTU8D75.png" alt="Buko Chips by Benj" />
+        <div class="loader-tagline">The Crunch That Started in Davao.</div>
+        <div class="loader-progress"><div class="loader-progress-bar"></div></div>
+    </div>
+
+    <!-- NAVIGATION -->
+    <nav id="navbar">
+        <div class="nav-logo">
+            <img src="https://cdn.corenexis.com/f/l0ubNTU8D75.png" alt="Buko Chips by Benj" />
+        </div>
+        <button class="menu-toggle" id="menuToggle" aria-label="Menu">
+            <i class="fas fa-bars"></i>
+        </button>
+        <ul class="nav-links" id="navLinks">
+            <li><a href="#home">Home</a></li>
+            <li><a href="#about">About</a></li>
+            <li><a href="#products">Products</a></li>
+            <li><a href="#reviews">Reviews</a></li>
+            <li><a href="#faq">FAQ</a></li>
+            <li><a href="#contact">Contact</a></li>
+            <li><a href="#reseller" class="reseller-cta">Become a Reseller</a></li>
+        </ul>
+    </nav>
+
+    <!-- HERO -->
+    <section class="hero" id="home">
+        <div class="hero-bg-particles" id="heroParticles"></div>
+        <div class="hero-content">
+            <h1>The <span>Crunch</span> That Started in Davao.</h1>
+            <p>Premium coconut chips made from real coconuts, baked to perfection and available in delicious flavors. Trusted by thousands of customers across the Philippines.</p>
+            <div class="hero-stats">
+                <div class="stat"><div class="num">4,000+</div><div class="label">Orders Served</div></div>
+                <div class="stat"><div class="num">₱400,000+</div><div class="label">Sales</div></div>
+                <div class="stat"><div class="num">15+</div><div class="label">Store Partners</div></div>
+            </div>
+            <div class="hero-btns">
+                <a href="#products" class="btn-primary">Order Now</a>
+                <a href="#reseller" class="btn-secondary">Become a Reseller</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- PRODUCT -->
+    <section class="product-experience" id="products">
+        <div class="section-label">Explore Flavors</div>
+        <h2 class="section-title" id="productTitle">Original</h2>
+        <p class="section-sub" id="productSub">The classic crunch that started it all.</p>
+        <div class="product-carousel-wrap" id="productCarousel">
+            <div class="product-track" id="productTrack"></div>
+        </div>
+        <div class="product-nav-dots" id="productDots"></div>
+    </section>
+
+    <!-- ABOUT -->
+    <section class="about-section" id="about">
+        <div class="container">
+            <div class="about-grid">
+                <div class="about-text">
+                    <h2>Our <span>Story</span></h2>
+                    <p>Buko Chips by Benj started with one goal—to create a healthier and more delicious coconut snack while proving that age is never a barrier to building a business.</p>
+                    <p>Every pack is made from real coconuts that are carefully prepared, flavored, and baked to achieve a light, crispy texture without sacrificing the natural taste of coconut.</p>
+                    <p>What began as a small student business has grown into a brand trusted by thousands of customers, partnered with local stores, and supported by resellers throughout the country.</p>
+                    <p>Today, Buko Chips by Benj continues to innovate with new flavors, better production methods, and opportunities for aspiring entrepreneurs.</p>
+                </div>
+                <div class="about-image">
+                    <img src="https://cdn.corenexis.com/f/WXSTw9p16dg.png" alt="Buko Chips by Benj" />
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- GALLERY -->
+    <section class="gallery-section" id="gallery">
+        <div class="container">
+            <h2>Behind the <span class="text-gradient">Crunch</span></h2>
+            <p class="gallery-sub">A glimpse into our process, from coconut to chip.</p>
+            <div class="gallery-scroll" id="galleryScroll">
+                <div class="gallery-item"><img src="https://cdn.corenexis.com/f/WXSTw9p16dg.png" alt="Gallery 1" /></div>
+                <div class="gallery-item"><img src="https://cdn.corenexis.com/f/95JhdVWXAEn.png" alt="Gallery 2" /></div>
+                <div class="gallery-item"><img src="https://cdn.corenexis.com/f/ldg8KQgcjFq.png" alt="Gallery 3" /></div>
+                <div class="gallery-item"><img src="https://cdn.corenexis.com/f/akWX1AOKQjv.png" alt="Gallery 4" /></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- WHY CHOOSE US -->
+    <section class="why-section" id="why">
+        <div class="container">
+            <h2>Why <span class="text-gradient">Choose Us</span></h2>
+            <div class="why-text-grid">
+                <div class="why-text-item"><i class="fas fa-seedling"></i><div><h4>Made from Real Coconuts</h4><p>100% natural, no artificial fillers.</p></div></div>
+                <div class="why-text-item"><i class="fas fa-clock"></i><div><h4>Freshly Made</h4><p>Baked in small batches for peak crunch.</p></div></div>
+                <div class="why-text-item"><i class="fas fa-star"></i><div><h4>Unique Flavors</h4><p>From classic to creative, there's one for you.</p></div></div>
+                <div class="why-text-item"><i class="fas fa-users"></i><div><h4>Trusted by Thousands</h4><p>Loved by customers all over the Philippines.</p></div></div>
+                <div class="why-text-item"><i class="fas fa-graduation-cap"></i><div><h4>Student-Owned Business</h4><p>Proof that passion knows no age.</p></div></div>
+                <div class="why-text-item"><i class="fas fa-handshake"></i><div><h4>Reseller Friendly</h4><p>We support aspiring entrepreneurs.</p></div></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- REVIEWS -->
+    <section class="reviews-section" id="reviews">
+        <div class="container">
+            <h2>What Our <span class="text-gradient">Customers Say</span></h2>
+            <p class="reviews-sub">Real reviews from real people who love the crunch.</p>
+            <div class="reviews-wrapper">
+                <div class="reviews-track" id="reviewsTrack"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ - HOVER TO REVEAL (no click) -->
+    <section class="faq-section" id="faq">
+        <div class="container">
+            <h2>Frequently Asked <span class="text-gradient">Questions</span></h2>
+            <div class="faq-list">
+                <div class="faq-item">
+                    <div class="faq-q"><span>How long do the chips last?</span><i class="fas fa-chevron-down"></i></div>
+                    <div class="faq-a">Our Buko Chips are best enjoyed fresh. Store them in a cool, dry place and keep the package tightly resealed after opening to maintain their crisp texture and delicious flavor. For the best experience, consume them before the expiration date printed on the packaging.</div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-q"><span>Do you ship nationwide?</span><i class="fas fa-chevron-down"></i></div>
+                    <div class="faq-a">Yes! We ship anywhere in the Philippines through trusted courier partners. Your order will be carefully packed to ensure it arrives fresh and ready to enjoy.</div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-q"><span>Do you offer reseller packages?</span><i class="fas fa-chevron-down"></i></div>
+                    <div class="faq-a">Absolutely! We welcome individuals, students, and entrepreneurs who want to start their own snack business. Our reseller package includes:<br><br>• Wholesale pricing<br>• Marketing materials<br>• Product selling guidance<br>• Dedicated promotional support<br>• Ongoing assistance for resellers</div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-q"><span>What flavors are available?</span><i class="fas fa-chevron-down"></i></div>
+                    <div class="faq-a">We currently offer the following delicious flavors:<br><br>• Original Buko Chips<br>• White Chocolate Buko Chips<br>• Dark Chocolate Buko Chips<br>• Matcha Buko Chips<br>• Strawberry Buko Chips<br>• Ube Buko Chips<br>• Buko Thins</div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-q"><span>Can I become a distributor?</span><i class="fas fa-chevron-down"></i></div>
+                    <div class="faq-a">Yes! We're continuously expanding our distribution network across the Philippines. If you're interested in becoming a distributor or reseller, we'd love to work with you. Contact us through our Facebook, Instagram, email, or phone number, and our team will guide you through the application process.</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CONTACT -->
+    <section class="contact-section" id="contact">
+        <div class="container">
+            <h2>Get in <span class="text-gradient">Touch</span></h2>
+            <p class="contact-sub">Have questions or want to place an order? Reach out to us.</p>
+            <form id="contactForm" class="contact-form">
+                <div class="form-group"><input type="text" id="name" placeholder="Your Name" required /></div>
+                <div class="form-group"><input type="email" id="email" placeholder="Your Email" required /></div>
+                <div class="form-group"><input type="text" id="subject" placeholder="Subject" required /></div>
+                <div class="form-group"><textarea id="message" placeholder="Your Message" rows="5" required></textarea></div>
+                <button type="submit" class="btn-primary">Send Message</button>
+            </form>
+            <div class="contact-info">
+                <div class="contact-item"><i class="fas fa-envelope"></i><a href="mailto:Bukochipsbybenj@gmail.com">Bukochipsbybenj@gmail.com</a></div>
+                <div class="contact-item"><i class="fas fa-phone"></i><a href="tel:09613385483">0961-338-5483</a></div>
+            </div>
+            <div class="social-links">
+                <a href="https://www.facebook.com/profile.php?id=61577286908917" target="_blank"><i class="fab fa-facebook"></i></a>
+                <a href="https://www.instagram.com/bukochips_by_benj/" target="_blank"><i class="fab fa-instagram"></i></a>
+                <a href="https://www.tiktok.com/@ben.riiid" target="_blank"><i class="fab fa-tiktok"></i></a>
+            </div>
+        </div>
+    </section>
+
+    <!-- RESELLER -->
+    <div id="reseller">
+        <h2>Become a <span class="text-gradient">Reseller</span></h2>
+        <p>Partner with us and share the crunch that started in Davao.</p>
+        <a href="mailto:Bukochipsbybenj@gmail.com" class="btn-primary">Inquire Now</a>
+    </div>
+
+    <!-- FOOTER -->
+    <footer>
+        <div class="container">
+            <div class="footer-brand">
+                <div class="footer-logo"><img src="https://cdn.corenexis.com/f/l0ubNTU8D75.png" alt="Buko Chips by Benj" /></div>
+                <p>Made with real coconuts, crafted with passion, and shared with thousands of happy customers.</p>
+            </div>
+            <div><h4>Quick Links</h4><ul><li><a href="#home">Home</a></li><li><a href="#about">About</a></li><li><a href="#products">Products</a></li><li><a href="#reviews">Reviews</a></li><li><a href="#faq">FAQ</a></li><li><a href="#contact">Contact</a></li></ul></div>
+            <div><h4>Connect</h4><div class="social-icons"><a href="https://www.facebook.com/profile.php?id=61577286908917" target="_blank"><i class="fab fa-facebook"></i></a><a href="https://www.instagram.com/bukochips_by_benj/" target="_blank"><i class="fab fa-instagram"></i></a><a href="https://www.tiktok.com/@ben.riiid" target="_blank"><i class="fab fa-tiktok"></i></a></div></div>
+            <div><h4>Hours</h4><ul><li>Mon – Sun</li><li>9:00 AM – 8:00 PM</li></ul></div>
+            <div class="footer-bottom">&copy; 2026 Buko Chips by Benj. All rights reserved.</div>
+        </div>
+    </footer>
+
+    <script>
+        // ============================================================
+        // 1. LENIS SMOOTH SCROLL
+        // ============================================================
+        const lenis = new Lenis({ duration:1.2, easing:(t)=>Math.min(1,1.001-Math.pow(2,-10*t)), smoothWheel:true });
+        function raf(time){ lenis.raf(time); requestAnimationFrame(raf); }
+        requestAnimationFrame(raf);
+
+        // ============================================================
+        // 2. LOADING
+        // ============================================================
+        window.addEventListener('load', ()=>{
+            setTimeout(()=>{
+                document.getElementById('loader').classList.add('hidden');
+                setTimeout(()=>{ document.getElementById('loader').style.display='none'; }, 1200);
+            }, 900);
+        });
+
+        // ============================================================
+        // 3. NAVIGATION
+        // ============================================================
+        const navbar = document.getElementById('navbar');
+        const hero = document.querySelector('.hero');
+        function handleSticky(){
+            const scrollY = window.scrollY;
+            if(scrollY > hero.offsetHeight * 0.4) navbar.classList.add('sticky');
+            else navbar.classList.remove('sticky');
+        }
+        window.addEventListener('scroll', handleSticky);
+        window.addEventListener('resize', handleSticky);
+
+        // ============================================================
+        // 4. MOBILE MENU
+        // ============================================================
+        const menuToggle = document.getElementById('menuToggle');
+        const navLinks = document.getElementById('navLinks');
+        menuToggle.addEventListener('click', ()=>{
+            navLinks.classList.toggle('open');
+            const icon = menuToggle.querySelector('i');
+            icon.className = navLinks.classList.contains('open') ? 'fas fa-times' : 'fas fa-bars';
+        });
+        document.querySelectorAll('.nav-links a').forEach(link=>{
+            link.addEventListener('click', ()=>{
+                navLinks.classList.remove('open');
+                menuToggle.querySelector('i').className = 'fas fa-bars';
+            });
+        });
+
+        // ============================================================
+        // 5. HERO PARTICLES
+        // ============================================================
+        (function createParticles(){
+            const container = document.getElementById('heroParticles');
+            for(let i=0;i<40;i++){
+                const span = document.createElement('span');
+                const size = 2 + Math.random()*4;
+                span.style.width = size+'px';
+                span.style.height = size+'px';
+                span.style.left = Math.random()*100+'%';
+                span.style.animationDelay = Math.random()*10+'s';
+                span.style.animationDuration = 8+Math.random()*12+'s';
+                span.style.opacity = 0.1+Math.random()*0.2;
+                container.appendChild(span);
+            }
+        })();
+
+        // ============================================================
+        // 6. PRODUCT DATA
+        // ============================================================
+        const products = [
+            { id:'original', name:'Original', desc:'The classic crunch that started it all.', img:'https://cdn.corenexis.com/f/zNFh2xVmGLL.png', theme:{ bg:'#faf7f2', text:'#1e1a14', accent:'#f5c542', navColor:'#1e1a14', glowColor:'rgba(245,197,66,0.5)', darkBg:'rgba(0,0,0,0.08)' } },
+            { id:'dark-chocolate', name:'Dark Chocolate', desc:'Rich, indulgent, and deeply satisfying.', img:'https://cdn.corenexis.com/f/qOpB68W7VmE.png', theme:{ bg:'#1a1410', text:'#f5ede3', accent:'#d4a050', navColor:'#f5ede3', glowColor:'rgba(212,160,80,0.5)', darkBg:'rgba(0,0,0,0.3)' } },
+            { id:'white-chocolate', name:'White Chocolate', desc:'Creamy, sweet, and utterly luxurious.', img:'https://cdn.corenexis.com/f/CGJSXjN9RW2.png', theme:{ bg:'#f8f4ef', text:'#1e1a14', accent:'#e8d5b8', navColor:'#1e1a14', glowColor:'rgba(232,213,184,0.5)', darkBg:'rgba(0,0,0,0.05)' } },
+            { id:'matcha', name:'Matcha', desc:'Earthy, vibrant, and Japanese-inspired.', img:'https://cdn.corenexis.com/f/f7NbwPAbaC6.png', theme:{ bg:'#1e2a1a', text:'#e8f0e0', accent:'#7cb342', navColor:'#e8f0e0', glowColor:'rgba(124,179,66,0.5)', darkBg:'rgba(0,0,0,0.25)' } },
+            { id:'strawberry', name:'Strawberry', desc:'Sweet, fruity, and full of summer vibes.', img:'https://cdn.corenexis.com/f/rLdxA6GBVoC.png', theme:{ bg:'#fce4ec', text:'#4a1a2a', accent:'#e57373', navColor:'#4a1a2a', glowColor:'rgba(229,115,115,0.5)', darkBg:'rgba(0,0,0,0.06)' } },
+            { id:'ube', name:'Ube', desc:'Purple, creamy, and uniquely Filipino.', img:'https://cdn.corenexis.com/f/oxcVj1OlWXv.png', theme:{ bg:'#1a1028', text:'#f0e8f8', accent:'#9c5cb0', navColor:'#f0e8f8', glowColor:'rgba(156,92,176,0.5)', darkBg:'rgba(0,0,0,0.3)' } },
+            { id:'buko-thins', name:'Buko Thins', desc:'Light, crispy, and irresistibly snackable.', img:'https://cdn.corenexis.com/f/vDLYA8cOgOX.png', theme:{ bg:'#f5efe8', text:'#1e1a14', accent:'#c9b09b', navColor:'#1e1a14', glowColor:'rgba(201,176,155,0.5)', darkBg:'rgba(0,0,0,0.05)' } }
+        ];
+
+        // ============================================================
+        // 7. RENDER PRODUCT SLIDES
+        // ============================================================
+        const track = document.getElementById('productTrack');
+        const dotsContainer = document.getElementById('productDots');
+        let currentIndex = 0;
+        const bgOverlay = document.createElement('div');
+        bgOverlay.className = 'bg-overlay';
+        document.querySelector('.product-experience').appendChild(bgOverlay);
+
+        products.forEach((p,i)=>{
+            const slide = document.createElement('div');
+            slide.className = 'product-slide' + (i===0?' active':'');
+            slide.dataset.index = i;
+            slide.innerHTML = `
+                <div class="product-img-wrapper">
+                    <img class="product-img" src="${p.img}" alt="${p.name}" />
+                </div>
+                <div class="product-name">${p.name}</div>
+                <div class="product-desc">${p.desc}</div>
+            `;
+            track.appendChild(slide);
+            const dot = document.createElement('div');
+            dot.className = 'dot' + (i===0?' active':'');
+            dot.dataset.index = i;
+            dot.addEventListener('click', ()=>goToProduct(i));
+            dotsContainer.appendChild(dot);
+        });
+
+        const slides = track.querySelectorAll('.product-slide');
+        const carouselWrap = document.getElementById('productCarousel');
+
+        function goToProduct(index) {
+            if(index<0) index=0;
+            if(index>=products.length) index=products.length-1;
+            currentIndex = index;
+            const product = products[index];
+            slides.forEach((s,i)=>s.classList.toggle('active', i===index));
+            document.querySelectorAll('.dot').forEach((d,i)=>d.classList.toggle('active', i===index));
+            document.getElementById('productTitle').textContent = product.name;
+            document.getElementById('productSub').textContent = product.desc;
+            applyTheme(product.theme);
+            // Glow
+            const activeSlide = slides[index];
+            const wrapper = activeSlide.querySelector('.product-img-wrapper');
+            wrapper.style.boxShadow = 'none';
+            wrapper.style.background = 'none';
+            const glow = product.theme.glowColor || 'rgba(245,197,66,0.4)';
+            wrapper.style.boxShadow = `0 0 80px 40px ${glow}`;
+            wrapper.style.background = `radial-gradient(circle, ${glow.replace('0.5','0.15')} 0%, transparent 70%)`;
+            // Center
+            const slideEl = slides[index];
+            const trackRect = track.getBoundingClientRect();
+            const slideRect = slideEl.getBoundingClientRect();
+            const offset = slideRect.left - trackRect.left - (trackRect.width/2) + (slideRect.width/2);
+            gsap.to(track, { x:-offset, duration:0.8, ease:'power3.inOut', overwrite:'auto' });
+        }
+
+        function applyTheme(theme) {
+            const exp = document.querySelector('.product-experience');
+            const title = document.getElementById('productTitle');
+            const sub = document.getElementById('productSub');
+            exp.style.background = theme.bg;
+            exp.style.color = theme.text;
+            title.style.color = theme.text;
+            sub.style.color = theme.text;
+            bgOverlay.style.background = theme.darkBg || 'rgba(0,0,0,0.1)';
+            bgOverlay.style.opacity = '1';
+            document.querySelectorAll('.nav-links a:not(.reseller-cta)').forEach(a=>a.style.color=theme.navColor);
+            menuToggle.style.color = theme.navColor;
+            document.querySelectorAll('.dot').forEach(d=>d.style.background=theme.accent+'44');
+            document.querySelectorAll('.dot.active').forEach(d=>d.style.background=theme.accent);
+            document.querySelectorAll('.product-name').forEach(el=>el.style.color=theme.text);
+            document.querySelectorAll('.product-desc').forEach(el=>el.style.color=theme.text+'99');
+        }
+
+        // Drag
+        let isDragging = false, startX=0;
+        carouselWrap.addEventListener('mousedown', (e)=>{
+            if(e.target.closest('.product-slide')){
+                isDragging = true;
+                startX = e.clientX;
+                carouselWrap.style.cursor = 'grabbing';
+            }
+        });
+        window.addEventListener('mousemove', (e)=>{
+            if(!isDragging) return;
+            const diff = e.clientX - startX;
+            if(Math.abs(diff) > 80){
+                const dir = diff > 0 ? -1 : 1;
+                const target = currentIndex + dir;
+                if(target>=0 && target<products.length){
+                    goToProduct(target);
+                    startX = e.clientX;
+                }
+                isDragging = false;
+                carouselWrap.style.cursor = 'grab';
+            }
+        });
+        window.addEventListener('mouseup', ()=>{
+            if(isDragging){
+                isDragging = false;
+                carouselWrap.style.cursor = 'grab';
+            }
+        });
+        let touchStartX = 0;
+        carouselWrap.addEventListener('touchstart', (e)=>{ touchStartX = e.touches[0].clientX; }, {passive:true});
+        carouselWrap.addEventListener('touchmove', (e)=>{
+            const diff = e.touches[0].clientX - touchStartX;
+            if(Math.abs(diff) > 60){
+                const dir = diff > 0 ? -1 : 1;
+                const target = currentIndex + dir;
+                if(target>=0 && target<products.length){
+                    goToProduct(target);
+                    touchStartX = e.touches[0].clientX;
+                }
+            }
+        }, {passive:true});
+        document.addEventListener('keydown', (e)=>{
+            if(e.key === 'ArrowRight') goToProduct(currentIndex+1);
+            if(e.key === 'ArrowLeft') goToProduct(currentIndex-1);
+        });
+
+        // ============================================================
+        // 8. GSAP ANIMATIONS
+        // ============================================================
+        gsap.registerPlugin(ScrollTrigger, Draggable);
+        gsap.from('.hero-content h1', {
+            scrollTrigger:{trigger:'.hero', start:'top top', end:'bottom top', scrub:1},
+            opacity:0.6, y:40, scale:0.98, ease:'power2.out'
+        });
+        const aboutH2 = document.querySelector('.about-section h2');
+        if(aboutH2){
+            const split = new SplitType(aboutH2, {types:'lines,words'});
+            gsap.from(split.words, {
+                scrollTrigger:{trigger:'.about-section', start:'top 80%', toggleActions:'play none none reverse'},
+                opacity:0, y:30, stagger:0.04, duration:0.8, ease:'power3.out'
+            });
+        }
+        document.querySelectorAll('.gallery-item').forEach((item,i)=>{
+            gsap.from(item, {
+                scrollTrigger:{trigger:item, start:'top 90%', toggleActions:'play none none reverse'},
+                opacity:0, scale:0.95, duration:0.7, delay:i*0.1, ease:'power2.out'
+            });
+        });
+
+        // ============================================================
+        // 9. FAQ - HOVER TO REVEAL (no JavaScript needed, pure CSS)
+        //     All the logic is in the CSS above using .faq-item:hover .faq-a
+        // ============================================================
+        // No JavaScript needed for FAQ - it's pure CSS hover!
+
+        // ============================================================
+        // 10. REVIEWS - render cards
+        // ============================================================
+        <!-- ===== REVIEWS - AUTO LOOPING RIGHT TO LEFT ===== -->
+<section class="reviews-section" id="reviews">
+    <div class="container">
+        <h2>What Our <span class="text-gradient">Customers Say</span></h2>
+        <p class="reviews-sub">Real reviews from real people who love the crunch.</p>
+        <div class="reviews-wrapper">
+            <div class="reviews-track" id="reviewsTrack">
+                <!-- reviews injected by JS (duplicated for seamless loop) -->
+            </div>
+        </div>
+    </div>
+</section>
+        const reviewsData = [
+            { stars:'★★★★★', text:'"Masarap siya! One customer even called us back after we had already left just to buy more packs."', author:'— Maria R.' },
+            { stars:'★★★★★', text:'"The White Chocolate is my favorite! So creamy and crunchy at the same time."', author:'— James L.' },
+            { stars:'★★★★★', text:'"Crispy, addicting, and worth every peso. Perfect for movie nights."', author:'— Angela T.' },
+            { stars:'★★★★★', text:'"Perfect pasalubong and snack while studying. My classmates love it!"', author:'— Carlo M.' }
+        ];
+        const rt = document.getElementById('reviewsTrack');
+        function createCard(d){
+            const c = document.createElement('div');
+            c.className = 'review-card';
+            c.innerHTML = `<div class="stars">${d.stars}</div><div class="review-text">${d.text}</div><div class="review-author">${d.author}</div>`;
+            return c;
+        }
+        reviewsData.forEach(d=>rt.appendChild(createCard(d)));
+
+        // ============================================================
+        // 11. CONTACT FORM
+        // ============================================================
+        document.getElementById('contactForm').addEventListener('submit', function(e){
+            e.preventDefault();
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const subject = document.getElementById('subject').value;
+            const message = document.getElementById('message').value;
+            const mailto = `mailto:Bukochipsbybenj@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(`Name: ${name}\nEmail: ${email}\n\n${message}`)}`;
+            window.location.href = mailto;
+            const btn = this.querySelector('.btn-primary');
+            const orig = btn.textContent;
+            btn.textContent = '✅ Opening Email...';
+            btn.style.background = '#4CAF50';
+            setTimeout(()=>{ btn.textContent = orig; btn.style.background = ''; }, 3000);
+            this.reset();
+        });
+
+        // ============================================================
+        // 12. PRODUCT MOUSE TILT
+        // ============================================================
+        document.addEventListener('mousemove', (e)=>{
+            const activeImg = document.querySelector('.product-slide.active .product-img');
+            if(!activeImg) return;
+            const rect = activeImg.getBoundingClientRect();
+            const x = (e.clientX - rect.left)/rect.width - 0.5;
+            const y = (e.clientY - rect.top)/rect.height - 0.5;
+            gsap.to(activeImg, { rotationY: x*8, rotationX: -y*8, duration:0.6, ease:'power2.out', overwrite:'auto' });
+        });
+        document.addEventListener('mouseleave', ()=>{
+            const activeImg = document.querySelector('.product-slide.active .product-img');
+            if(activeImg) gsap.to(activeImg, { rotationY:0, rotationX:0, duration:0.8, ease:'power2.out' });
+        });
+
+        // ============================================================
+        // 13. INIT
+        // ============================================================
+        goToProduct(0);
+        let resizeTimeout;
+        window.addEventListener('resize', ()=>{
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(()=>{ goToProduct(currentIndex); }, 200);
+        });
+        console.log('🍃 Buko Chips by Benj — FAQ now reveals on hover!');
+    </script>
+</body>
+</html>
